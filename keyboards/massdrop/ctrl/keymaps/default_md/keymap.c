@@ -24,10 +24,16 @@ enum ctrl_keycodes {
     DBG_KBD,            //DEBUG Toggle Keyboard Prints
     DBG_MOU,            //DEBUG Toggle Mouse Prints
     DBG_FAC,            //DEBUG Factory light testing (All on white)
-    MD_BOOT             //Restart into bootloader after hold timeout
+    MD_BOOT,            //Restart into bootloader after hold timeout
+
+    // begin my keycodes
+    GUI_LOCK
 };
 
 #define TG_NKRO MAGIC_TOGGLE_NKRO //Toggle 6KRO / NKRO mode
+
+extern RGB led_buffer[];
+bool guiLocked = false; // windows key lock
 
 keymap_config_t keymap_config;
 
@@ -41,12 +47,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LCTL, KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, MO(1),   KC_APP,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT  \
     ),
     [1] = LAYOUT(
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            KC_MUTE, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
-        L_T_BR,  L_PSD,   L_BRI,   L_PSI,   L_EDG_I, _______, _______, _______, U_T_AGCR,_______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
-        L_T_PTD, L_PTP,   L_BRD,   L_PTN,   L_EDG_D, _______, _______, _______, _______, _______, _______, _______, _______,                                       \
-        _______, L_T_MD,  L_T_ONF, _______, L_EDG_M, MD_BOOT, TG_NKRO, _______, _______, _______, _______, _______,                              _______,          \
-        _______, _______, _______,                   DBG_FAC,                            _______, _______, _______, _______,            _______, _______, _______  \
+        MD_BOOT, U_T_AGCR,TG_NKRO, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, KC_MUTE, \
+        L_PTP,   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
+        L_PTN,   _______, _______, L_BRI,   L_PSI,   _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
+        L_T_MD,  _______, _______, L_BRD,   L_PSD,   _______, _______, _______, _______, _______, _______, _______, _______,                                       \
+        _______, L_T_PTD, L_T_BR,  L_EDG_M, _______, _______, _______, _______, _______, _______, _______, _______,                              _______,          \
+        _______, GUI_LOCK,_______,                   _______,                            _______, _______, _______, _______,            _______, _______, _______  \
     ),
     /*
     [X] = LAYOUT(
@@ -62,10 +68,20 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // Runs just one time when the keyboard initializes.
 void matrix_init_user(void) {
+    led_lighting_mode = LED_MODE_INDICATORS_ONLY;
 };
 
 // Runs constantly in the background, in a loop.
 void matrix_scan_user(void) {
+};
+
+void rgb_matrix_indicators_user(void) {
+    // left gui key
+    if (guiLocked) {
+        led_buffer[77].r = 255 - led_buffer[77].r;
+        led_buffer[77].g = 255 - led_buffer[77].g;
+        led_buffer[77].b = 255 - led_buffer[77].b;
+    }
 };
 
 #define MODS_SHIFT (get_mods() & MOD_BIT(KC_LSHIFT) || get_mods() & MOD_BIT(KC_RSHIFT))
@@ -253,6 +269,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
             }
             return false;
+        case GUI_LOCK:
+            if (record->event.pressed) {
+                guiLocked = !guiLocked;
+            }
+            return false;
+        case KC_LGUI:
+            if (record->event.pressed) {
+                return !guiLocked;
+            }
+            return true;
         default:
             return true; //Process all other keycodes normally
     }

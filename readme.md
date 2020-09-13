@@ -1,3 +1,14 @@
+# The only keyboard I change in this fork is the Massdrop CTRL!
+
+My changes are:
+
+* Keymap changed to fit my personal preferences in `default_md`. `default` is also changed, but still a WIP due to indicator LED bugs (caps lock, etc.).
+* Windows (GUI) key lock.
+* Default RGB off.
+* Minor changes to `config.h`, such as forcing NKRO.
+
+___
+
 # Quantum Mechanical Keyboard Firmware
 
 [![Current Version](https://img.shields.io/github/tag/qmk/qmk_firmware.svg)](https://github.com/qmk/qmk_firmware/tags)

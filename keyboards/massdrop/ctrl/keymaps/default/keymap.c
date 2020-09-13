@@ -7,9 +7,15 @@ enum ctrl_keycodes {
     DBG_KBD,               //DEBUG Toggle Keyboard Prints
     DBG_MOU,               //DEBUG Toggle Mouse Prints
     MD_BOOT,               //Restart into bootloader after hold timeout
+
+    // begin my keycodes
+    GUI_LOCK
 };
 
 #define TG_NKRO MAGIC_TOGGLE_NKRO //Toggle 6KRO / NKRO mode
+
+extern RGB led_buffer[];
+bool guiLocked = false; // windows key lock
 
 keymap_config_t keymap_config;
 
@@ -23,12 +29,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LCTL, KC_LGUI, KC_LALT,                   KC_SPC,                             KC_RALT, MO(1),   KC_APP,  KC_RCTL,            KC_LEFT, KC_DOWN, KC_RGHT \
     ),
     [1] = LAYOUT(
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            KC_MUTE, _______, _______, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
-        _______, RGB_SPD, RGB_VAI, RGB_SPI, RGB_HUI, RGB_SAI, _______, _______, U_T_AGCR,_______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
-        _______, RGB_RMOD,RGB_VAD, RGB_MOD, RGB_HUD, RGB_SAD, _______, _______, _______, _______, _______, _______, _______, \
-        _______, RGB_TOG, _______, _______, _______, MD_BOOT, TG_NKRO, _______, _______, _______, _______, _______,                              _______, \
-        _______, _______, _______,                   _______,                            _______, _______, _______, _______,            _______, _______, _______ \
+        MD_BOOT, U_T_AGCR,TG_NKRO, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,            _______, _______, KC_MUTE, \
+        RGB_RMOD,_______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPLY, KC_MSTP, KC_VOLU, \
+        RGB_MOD, RGB_HUI, RGB_SAI, RGB_VAI, RGB_SPI, _______, _______, _______, _______, _______, _______, _______, _______, _______,   KC_MPRV, KC_MNXT, KC_VOLD, \
+        RGB_TOG, RGB_HUD, RGB_SAD, RGB_VAD, RGB_SPD, _______, _______, _______, _______, _______, _______, _______, _______, \
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,                              _______, \
+        _______, GUI_LOCK,_______,                   _______,                            _______, _______, _______, _______,            _______, _______, _______ \
     ),
     /*
     [X] = LAYOUT(
@@ -44,10 +50,63 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // Runs just one time when the keyboard initializes.
 void matrix_init_user(void) {
+    rgb_matrix_set_flags(LED_FLAG_NONE);
+    rgb_matrix_set_color_all(0, 0, 0);
 };
 
 // Runs constantly in the background, in a loop.
 void matrix_scan_user(void) {
+};
+
+void rgb_matrix_indicators_user(void) {
+    uint8_t led_off = rgb_matrix_get_flags() == LED_FLAG_NONE;
+
+    // caps lock
+    if (IS_HOST_LED_ON(USB_LED_CAPS_LOCK)) {
+        led_buffer[50].r = 255 - led_buffer[50].r;
+        led_buffer[50].g = 255 - led_buffer[50].g;
+        led_buffer[50].b = 255 - led_buffer[50].b;
+
+        // rgb_matrix_set_color(
+        //     50,
+        //     255 - led_buffer[50].r,
+        //     255 - led_buffer[50].g,
+        //     255 - led_buffer[50].b
+        // );
+    } else if (led_off) {
+        led_buffer[50].r = 0;
+        led_buffer[50].g = 0;
+        led_buffer[50].b = 0;
+
+        // rgb_matrix_set_color(
+        //     50,
+        //     0,
+        //     0,
+        //     0
+        // );
+    }
+
+    // scroll lock
+    if (IS_HOST_LED_ON(USB_LED_SCROLL_LOCK)) {
+        led_buffer[14].r = 255 - led_buffer[14].r;
+        led_buffer[14].g = 255 - led_buffer[14].g;
+        led_buffer[14].b = 255 - led_buffer[14].b;
+    } else if (led_off) {
+        led_buffer[14].r = 0;
+        led_buffer[14].g = 0;
+        led_buffer[14].b = 0;
+    }
+
+    // left gui key
+    if (guiLocked) {
+        led_buffer[77].r = 255 - led_buffer[77].r;
+        led_buffer[77].g = 255 - led_buffer[77].g;
+        led_buffer[77].b = 255 - led_buffer[77].b;
+    } else if (led_off) {
+        led_buffer[77].r = 0;
+        led_buffer[77].g = 0;
+        led_buffer[77].b = 0;
+    }
 };
 
 #define MODS_SHIFT  (get_mods() & MOD_BIT(KC_LSHIFT) || get_mods() & MOD_BIT(KC_RSHIFT))
@@ -118,6 +177,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
               }
             }
             return false;
+        case GUI_LOCK:
+            if (record->event.pressed) {
+                guiLocked = !guiLocked;
+            }
+            return false;
+        case KC_LGUI:
+            if (record->event.pressed) {
+                return !guiLocked;
+            }
+            return true;
         default:
             return true; //Process all other keycodes normally
     }
